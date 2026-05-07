@@ -1,0 +1,46 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "image.Analyzer";
+package imageAnalyzer;
+
+service imageAnalyser {
+
+  //send image to server
+  rpc publishImage(ImageSend) returns (ImageIdentifier);
+
+  //retrieve image labels from server by given id
+  rpc retrieveImageCharacteristics(ImageIdentifier) returns (ImageCharacteristics);
+
+  //search images published under a given time interval
+  rpc imagesSearch(DateConstraints) returns (ImageNames);
+}
+
+message ImageIdentifier {
+  string id = 1; // maybe change to int, to see which is better suited
+}
+
+message ImageSend {
+  //oneof data{
+    string file_name = 1;
+    bytes chunk_data = 2;
+  //}
+}
+
+message ImageCharacteristics {
+  repeated string characteristic = 1;
+}
+
+message DateConstraints {
+  //lower end of date interval
+  google.protobuf.Timestamp startDate = 1;
+  //higher end of date interval
+  google.protobuf.Timestamp endDate = 2;
+}
+
+message ImageNames {
+  //list of names
+  repeated string name = 1;
+}
