@@ -3,19 +3,20 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
-option java_package = "image.Analyzer";
+option java_package = "image.analyzer";
 package imageAnalyzer;
 
-service imageAnalyser {
+service ImageAnalyser {
 
   //send image to server
-  rpc publishImage(ImageSend) returns (ImageIdentifier);
+  rpc publishImage(stream ImageSend) returns (ImageIdentifier);
 
   //retrieve image labels from server by given id
   rpc retrieveImageCharacteristics(ImageIdentifier) returns (ImageCharacteristics);
 
   //search images published under a given time interval
-  rpc imagesSearch(DateConstraints) returns (ImageNames);
+  rpc imagesSearch(SearchByDateIntervalAndLabel) returns (ImageNames);
+
 }
 
 message ImageIdentifier {
@@ -24,8 +25,9 @@ message ImageIdentifier {
 
 message ImageSend {
   //oneof data{
-    string file_name = 1;
-    bytes chunk_data = 2;
+
+  //string chunk_id = 1; check if necessary or if grpc guarantees order
+  bytes chunk_data = 2;
   //}
 }
 
@@ -33,11 +35,13 @@ message ImageCharacteristics {
   repeated string characteristic = 1;
 }
 
-message DateConstraints {
+message SearchByDateIntervalAndLabel {
   //lower end of date interval
   google.protobuf.Timestamp startDate = 1;
   //higher end of date interval
   google.protobuf.Timestamp endDate = 2;
+  //label needs to match
+  string label = 3;
 }
 
 message ImageNames {
