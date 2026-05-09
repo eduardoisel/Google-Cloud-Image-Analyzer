@@ -41,29 +41,8 @@ public class App {
     private static ImageAnalyserGrpc.ImageAnalyserBlockingStub blockingStub;
     private static ImageAnalyserGrpc.ImageAnalyserStub noBlockStub;
 
-
-    public static Storage storage;
-
-    /**
-     * main checks GOOGLE_APPLICATION_CREDENTIALS, but this may be leftover from lab that required download from bucket to check what can be removed
-     *
-     * @param args
-     */
     public static void main(String[] args) {
 
-        if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
-            System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
-            System.exit(-1);
-        }
-
-        StorageOptions storageOptions = StorageOptions.getDefaultInstance();
-        storage = storageOptions.getService();
-        String projID = storageOptions.getProjectId();
-        if (projID != null) System.out.println("Current Project ID:" + projID);
-        else {
-            System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
-            System.exit(-1);
-        }
 
         try {
             System.out.println();
@@ -119,7 +98,7 @@ public class App {
 
     /**
      * Probably better to add here a check on type of file
-     * 
+     *
      */
     static void sendImage() {
 
@@ -172,7 +151,10 @@ public class App {
     static void getLabelsOfImage() {
         String id = read("Choose the image id", new Scanner(System.in));
 
-        ImageCharacteristics characteristics = blockingStub.retrieveImageCharacteristics(ImageIdentifier.newBuilder().setId(id).build());
+        ImageIdentifier identifier = ImageIdentifier.newBuilder().setId(id).build();
+
+        ImageCharacteristics characteristics = blockingStub
+                .retrieveImageCharacteristics(identifier);
 
         int count = characteristics.getCharacteristicCount();
 
