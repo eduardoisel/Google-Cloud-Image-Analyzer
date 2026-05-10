@@ -1,4 +1,4 @@
-package isel.forum.server;
+package isel.image.analyzer.server;
 
 import io.grpc.ServerBuilder;
 

@@ -1,0 +1,68 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Properties copied from other (client), to see if is right after -->
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <java.version>25</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
+  </properties>
+
+  <groupId>isel.image-analyzer</groupId>
+  <artifactId>labelsApp</artifactId>
+  <version>1.0</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>isel.image-analyzer</groupId> <!-- contract -->
+      <artifactId>contract</artifactId>
+      <version>1.0</version>
+    </dependency>
+
+
+    <!-- Storage, from 3.1/4.2 na imagem do enunciado-->
+    <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-storage -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+      <version>2.67.0</version>
+    </dependency>
+
+
+    <!-- Pub/sub 3.2/4.1 -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-pubsub</artifactId>
+      <version>1.150.1</version>
+    </dependency>
+
+
+    <!-- Firestore -->
+    <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-firestore -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-firestore</artifactId>
+      <version>3.41.0</version>
+    </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-translate -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-translate</artifactId>
+      <version>2.91.0</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-vision -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-vision</artifactId>
+      <version>3.89.0</version>
+      <scope>compile</scope>
+    </dependency>
+
+  </dependencies>
+
+</project>
