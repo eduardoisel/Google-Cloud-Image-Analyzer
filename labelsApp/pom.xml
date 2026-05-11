@@ -17,13 +17,6 @@
   <version>1.0</version>
 
   <dependencies>
-    <dependency>
-      <groupId>isel.image-analyzer</groupId> <!-- contract -->
-      <artifactId>contract</artifactId>
-      <version>1.0</version>
-    </dependency>
-
-
     <!-- Storage, from 3.1/4.2 na imagem do enunciado-->
     <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-storage -->
     <dependency>
