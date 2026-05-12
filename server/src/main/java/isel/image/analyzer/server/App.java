@@ -1,5 +1,7 @@
 package isel.image.analyzer.server;
 
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import io.grpc.ServerBuilder;
 
 import java.io.IOException;
@@ -10,8 +12,6 @@ public class App {
 
     public static void main(String[] args) throws InterruptedException, IOException {
 
-        //not yet used
-        /*
         //does not check if it has right permissions
         if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null){
             System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
@@ -29,15 +29,13 @@ public class App {
             System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
             System.exit(-1);
         }
-        */
-
 
         if (args.length > 0) svcPort = Integer.parseInt(args[0]);
 
         io.grpc.Server svc = ServerBuilder.forPort(svcPort)
                 // Add one or more services.
                 // The Server can host many services in same TCP/IP port
-                .addService(new ServiceImpl())
+                .addService(new ServiceImpl(new StorageOperations(storage)))
                 .build();
 
         svc.start();

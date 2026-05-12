@@ -22,10 +22,14 @@ message ImageIdentifier {
   string id = 1; // maybe change to int, to see which is better suited
 }
 
+//expected to be use as stream
 message ImageSend {
   //oneof data{
 
-  //string chunk_id = 1; check if necessary or if grpc guarantees order
+  //HAS to include file type (png, jpg) to be stored correctly
+  optional string name = 1;
+
+  //divided in stream
   bytes chunk_data = 2;
   //}
 }

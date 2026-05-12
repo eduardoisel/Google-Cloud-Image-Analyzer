@@ -102,20 +102,7 @@ public class App {
      */
     static void sendImage() {
 
-        String fileName = read("Insert absolute path for image file; not used", new Scanner(System.in));
-
-
-//        System.out.println("AAAAAA");
-//
-//        JFileChooser fileChooser = new JFileChooser();
-//        fileChooser.setVisible(true);
-//        int returnValue = fileChooser.showOpenDialog(null);
-//        File selectedFile;
-//        if (returnValue != JFileChooser.APPROVE_OPTION) {
-//            return;
-//        }
-//
-//        selectedFile = fileChooser.getSelectedFile();
+        String fileName = read("Insert absolute path for image file", new Scanner(System.in));
 
         Path path = Paths.get(fileName);
         File selectedFile = path.toFile();
@@ -136,8 +123,8 @@ public class App {
 
             StreamObserver<ImageSend> imageSendStreamObserver = noBlockStub.publishImage(imageIdentifierStream);
 
-
-            imageSendStreamObserver.onNext(ImageSend.newBuilder().setChunkData(ByteString.copyFrom(arr)).build());
+            imageSendStreamObserver
+                    .onNext(ImageSend.newBuilder().setName(selectedFile.getName()).setChunkData(ByteString.copyFrom(arr)).build());
 
             imageSendStreamObserver.onCompleted();
 

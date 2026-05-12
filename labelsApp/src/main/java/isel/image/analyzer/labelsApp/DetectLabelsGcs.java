@@ -14,6 +14,8 @@ import java.util.List;
 
 public class DetectLabelsGcs {
 
+  static String bucket = "gs://cn_g08_europe/"; //todo decide
+
   public static void detectLabelsGcs() throws IOException {
     // TODO(developer): Replace these variables before running the sample.
     String filePath = "gs://your-gcs-bucket/path/to/image/file.jpg";
@@ -24,7 +26,7 @@ public class DetectLabelsGcs {
   public static void detectLabelsGcs(String gcsPath) throws IOException {
     List<AnnotateImageRequest> requests = new ArrayList<>();
 
-    ImageSource imgSource = ImageSource.newBuilder().setGcsImageUri(gcsPath).build();
+    ImageSource imgSource = ImageSource.newBuilder().setGcsImageUri(bucket + gcsPath).build();
     Image img = Image.newBuilder().setSource(imgSource).build();
     Feature feat = Feature.newBuilder().setType(Feature.Type.LABEL_DETECTION).build();
     AnnotateImageRequest request =

@@ -1,5 +1,12 @@
 package isel.image.analyzer.server;
 
+import com.google.api.core.ApiFuture;
+import com.google.cloud.pubsub.v1.Publisher;
+import com.google.cloud.storage.Storage;
+import com.google.gson.Gson;
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.PubsubMessage;
+import com.google.pubsub.v1.TopicName;
 import image.analyzer.ImageAnalyserGrpc;
 import image.analyzer.ImageCharacteristics;
 import image.analyzer.ImageIdentifier;
@@ -22,6 +29,12 @@ import java.util.UUID;
  * simply being closed without all topic unsubscribe
  */
 public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
+
+    private final StorageOperations storageOperations;
+
+    public  ServiceImpl(StorageOperations storageOperations) {
+        this.storageOperations = storageOperations;
+    }
 
     @Override
     public StreamObserver<ImageSend> publishImage(StreamObserver<ImageIdentifier> responseObserver) {
@@ -50,7 +63,7 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
 
                 try {
 
-                    byte[] arr = value.getChunkData().toByteArray();
+                    byte[] arr = value.getChunkData().toByteArray(); value.getChunkData().asReadOnlyByteBuffer();
 
                     fileOutputStream.write(arr);
 

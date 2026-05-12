@@ -53,6 +53,8 @@ public class App {
 
     static void main(String[] args) throws IOException {
 
+        //DetectLabelsGcs.detectLabelsGcs("C:\\Users\\Edu\\Desktop\\jimage.png");
+
 
         GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
