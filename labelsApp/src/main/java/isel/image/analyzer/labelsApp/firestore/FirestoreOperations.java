@@ -14,7 +14,7 @@ import javax.annotation.Nonnull;
 
 public class FirestoreOperations {
 
-    static String collectionName = ""; //todo decide
+    static String collectionName = "trab"; //todo decide
 
     CollectionReference collectionReference;
 
@@ -27,7 +27,7 @@ public class FirestoreOperations {
 
 
     public void save(ImageInfo imageInfo) throws ExecutionException, InterruptedException {
-        DocumentReference docRef = collectionReference.document(imageInfo.id);
+        DocumentReference docRef = collectionReference.document(imageInfo.id());
         ApiFuture<WriteResult> resultFut = docRef.set(imageInfo);
         WriteResult result = resultFut.get();
         System.out.println("Update time : " + result.getUpdateTime());

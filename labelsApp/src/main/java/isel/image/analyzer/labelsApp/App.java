@@ -3,6 +3,7 @@ package isel.image.analyzer.labelsApp;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.pubsub.v1.Subscriber;
@@ -10,9 +11,16 @@ import com.google.cloud.translate.Detection;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
+import com.google.cloud.vision.v1.EntityAnnotation;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import isel.image.analyzer.labelsApp.firestore.FirestoreOperations;
+import isel.image.analyzer.labelsApp.firestore.ImageInfo;
+import isel.image.analyzer.labelsApp.firestore.LabelInfo;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class App {
 
@@ -51,10 +59,8 @@ public class App {
 
     static FirestoreOperations firestoreOperations;
 
-    static void main(String[] args) throws IOException {
-
-        //DetectLabelsGcs.detectLabelsGcs("C:\\Users\\Edu\\Desktop\\jimage.png");
-
+    static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
+        Translate translate = TranslateOptions.getDefaultInstance().getService();
 
         GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
@@ -65,8 +71,20 @@ public class App {
         firestoreOperations = new FirestoreOperations(options.getService());
 
 
+        List<LabelInfo> labels = DetectLabelsGcs.getEntityAnnotations("jimage.jpg")
+                .stream().map(LabelInfo::new)
+                .map(label -> {
+                    Translation translation =
+                            translate.translate(
+                                    label.name(),
+                                    Translate.TranslateOption.sourceLanguage("en"),
+                                    Translate.TranslateOption.targetLanguage("pt"));
+
+                    return new LabelInfo(translation.getTranslatedText(), label.score(), label.topicality());
+                }).toList();
 
 
+        firestoreOperations.save(new ImageInfo("jimage.jpg", Timestamp.now().toDate(), labels));
 
     }
 
@@ -84,6 +102,8 @@ public class App {
                         .setExecutorProvider(executorProvider)
                         .build();
         subscriber.startAsync().awaitRunning();
+
+        //subscriber.awaitTerminated();
 
     }
 }
