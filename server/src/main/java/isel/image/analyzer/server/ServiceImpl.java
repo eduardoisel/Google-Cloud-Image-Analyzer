@@ -1,25 +1,19 @@
 package isel.image.analyzer.server;
 
-import com.google.api.core.ApiFuture;
-import com.google.cloud.pubsub.v1.Publisher;
-import com.google.cloud.storage.Storage;
-import com.google.gson.Gson;
-import com.google.protobuf.ByteString;
-import com.google.pubsub.v1.PubsubMessage;
-import com.google.pubsub.v1.TopicName;
+import com.google.cloud.Timestamp;
 import image.analyzer.ImageAnalyserGrpc;
 import image.analyzer.ImageCharacteristics;
 import image.analyzer.ImageIdentifier;
 import image.analyzer.ImageNames;
 import image.analyzer.ImageSend;
 import image.analyzer.SearchByDateIntervalAndLabel;
+import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import isel.image.analyzer.server.firestore.FirestoreOperations;
+import isel.image.analyzer.server.firestore.ImageInfo;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,40 +26,39 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
 
     private final StorageOperations storageOperations;
 
-    public  ServiceImpl(StorageOperations storageOperations) {
+    private final PubSub pubSub;
+
+    private final FirestoreOperations firestoreOperations;
+
+    public ServiceImpl(StorageOperations storageOperations, PubSub pubSub, FirestoreOperations firestoreOperations) {
         this.storageOperations = storageOperations;
+        this.pubSub = pubSub;
+        this.firestoreOperations = firestoreOperations;
     }
 
     @Override
     public StreamObserver<ImageSend> publishImage(StreamObserver<ImageIdentifier> responseObserver) {
 
-        //testing "reconstruction" of file sent by client
-
         return new StreamObserver<ImageSend>() {
-
-            final Path download = Path.of(System.getProperty("user.home"), "Downloads");
 
             final String id = UUID.randomUUID().toString();
 
-            final FileOutputStream fileOutputStream;
+            String fileName = null;
 
-            {
-                try {
-                    fileOutputStream = new FileOutputStream(download.resolve(id + ".png").toFile());
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            StorageOperations.ChunkUploader chunkUploader;
+
 
             @Override
             public void onNext(ImageSend value) {
 
-
                 try {
 
-                    byte[] arr = value.getChunkData().toByteArray(); value.getChunkData().asReadOnlyByteBuffer();
+                    if (fileName == null) {
+                        fileName = value.getName();
+                        chunkUploader = storageOperations.uploadImage(id);
+                    }
 
-                    fileOutputStream.write(arr);
+                    chunkUploader.upload(value.getChunkData().asReadOnlyByteBuffer());
 
 
                 } catch (IOException e) {
@@ -82,14 +75,20 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
             @Override
             public void onCompleted() {
 
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
 
                 responseObserver.onNext(ImageIdentifier.newBuilder().setId(id).build());
+                try {
+                    chunkUploader.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
                 responseObserver.onCompleted();
+
+                try {
+                    pubSub.publishMessage(id);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
 
             }
         };
@@ -99,24 +98,37 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
     @Override
     public void retrieveImageCharacteristics(ImageIdentifier request, StreamObserver<ImageCharacteristics> responseObserver) {
 
-        List<String> list = new LinkedList<>();
+        try {
+            ImageInfo imageInfo = firestoreOperations.search(request.getId());
+            responseObserver.onNext(ImageCharacteristics.newBuilder().addAllCharacteristic(imageInfo.labelNames()).build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(new StatusException(Status.ABORTED));
+        }
 
-        list.add("mock"); list.add("fake_result");
-
-        responseObserver.onNext(ImageCharacteristics.newBuilder().addAllCharacteristic(list).build());
-        responseObserver.onCompleted();
 
     }
 
     @Override
     public void imagesSearch(SearchByDateIntervalAndLabel request, StreamObserver<ImageNames> responseObserver) {
 
-        List<String> list = new LinkedList<>();
 
-        list.add("mock"); list.add("fake_result");
+        try {
+            List<ImageInfo> imageInfo = firestoreOperations.search(
+                    Timestamp.fromProto(request.getStartDate()),
+                    Timestamp.fromProto(request.getEndDate()),
+                    request.getLabel());
 
-        responseObserver.onNext(ImageNames.newBuilder().addAllName(list).build());
-        responseObserver.onCompleted();
+            //todo only sending labels without certainties
+            responseObserver
+                    .onNext(ImageNames.newBuilder().addAllName(imageInfo.stream().map(ImageInfo::id).toList()).build());
+
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(new StatusException(Status.ABORTED));
+        }
+
 
     }
 

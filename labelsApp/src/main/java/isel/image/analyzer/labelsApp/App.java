@@ -3,64 +3,37 @@ package isel.image.analyzer.labelsApp;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.Timestamp;
-import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.pubsub.v1.Subscriber;
-import com.google.cloud.translate.Detection;
+import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
-import com.google.cloud.translate.Translation;
-import com.google.cloud.vision.v1.EntityAnnotation;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import isel.image.analyzer.labelsApp.firestore.FirestoreOperations;
-import isel.image.analyzer.labelsApp.firestore.ImageInfo;
-import isel.image.analyzer.labelsApp.firestore.LabelInfo;
 import java.io.IOException;
-import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class App {
 
-//    static void main() throws IOException {
-//
-//        DetectLabels.detectLabels();
-//    }
+    static String subscriptionId = "Image-sub"; //todo decide
 
-//    public static void main(String... args) {
-//        // Create a service object
-//        //
-//        // If no explicit credentials or API key are set, requests are authenticated using Application
-//        // Default Credentials if available; otherwise, using an API key from the GOOGLE_API_KEY
-//        // environment variable
-//        Translate translate = TranslateOptions.getDefaultInstance().getService();
-//
-//        // Text of an "unknown" language to detect and then translate into English
-//        final String mysteriousText = "Hola Mundo";
-//
-//        // Detect the language of the mysterious text
-//        Detection detection = translate.detect(mysteriousText);
-//        String detectedLanguage = detection.getLanguage();
-//
-//        // Translate the mysterious text to English
-//        Translation translation =
-//                translate.translate(
-//                        mysteriousText,
-//                        Translate.TranslateOption.sourceLanguage(detectedLanguage),
-//                        Translate.TranslateOption.targetLanguage("en"));
-//
-//        System.out.println(translation.getTranslatedText());
-//    }
-
-    static String subscriptionId; //todo decide
-    static String projectId = "cn2526-t4-g08";
-
+    static String projectId;
+    static Translate translate;
     static FirestoreOperations firestoreOperations;
 
-    static void main(String[] args) throws IOException, ExecutionException, InterruptedException {
-        Translate translate = TranslateOptions.getDefaultInstance().getService();
+    static void main() throws IOException {
+
+        StorageOptions storageOptions = StorageOptions.getDefaultInstance();
+
+        //extra check of GOOGLE_APPLICATION_CREDENTIALS keys, left to ease debugging as (i think) it will be needed to run on cloud virtual machine
+        projectId = storageOptions.getProjectId();
+        if (projectId != null) System.out.println("Current Project ID:" + projectId);
+        else {
+            System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
+            System.exit(-1);
+        }
+
+
+        translate = TranslateOptions.getDefaultInstance().getService();
 
         GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
@@ -70,40 +43,26 @@ public class App {
 
         firestoreOperations = new FirestoreOperations(options.getService());
 
-
-        List<LabelInfo> labels = DetectLabelsGcs.getEntityAnnotations("jimage.jpg")
-                .stream().map(LabelInfo::new)
-                .map(label -> {
-                    Translation translation =
-                            translate.translate(
-                                    label.name(),
-                                    Translate.TranslateOption.sourceLanguage("en"),
-                                    Translate.TranslateOption.targetLanguage("pt"));
-
-                    return new LabelInfo(translation.getTranslatedText(), label.score(), label.topicality());
-                }).toList();
-
-
-        firestoreOperations.save(new ImageInfo("jimage.jpg", Timestamp.now().toDate(), labels));
+        subscribe();
 
     }
 
 
-    public static void subscribe(String subscriptionID) throws IOException {
+    public static void subscribe() {
 
-        ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of("id", subscriptionID);
+        ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, subscriptionId);
 
         ExecutorProvider executorProvider = InstantiatingExecutorProvider
                 .newBuilder()
                 .setExecutorThreadCount(1) // ensures only 1 message is processed
                 .build();
         Subscriber subscriber =
-                Subscriber.newBuilder(subscriptionName, new MessageReceiveHandler(firestoreOperations))
+                Subscriber.newBuilder(subscriptionName, new MessageReceiveHandler(firestoreOperations, translate))
                         .setExecutorProvider(executorProvider)
                         .build();
         subscriber.startAsync().awaitRunning();
 
-        //subscriber.awaitTerminated();
+        subscriber.awaitTerminated();
 
     }
 }

@@ -16,7 +16,10 @@ import com.google.gson.Gson;
 import com.google.pubsub.v1.PubsubMessage;
 import isel.image.analyzer.labelsApp.firestore.FirestoreOperations;
 import isel.image.analyzer.labelsApp.firestore.ImageInfo;
+import isel.image.analyzer.labelsApp.firestore.ImageLocation;
 import isel.image.analyzer.labelsApp.firestore.LabelInfo;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,12 +47,21 @@ public class MessageReceiveHandler implements MessageReceiver {
 
         String json = message.getData().toStringUtf8();
 
-        String imageId = gsonMsg.fromJson(json, String.class);
+        ImageLocation imageLocation = gsonMsg.fromJson(json, ImageLocation.class);
 
         try {
 
-            List<LabelInfo> labels = DetectLabelsGcs.getEntityAnnotations(imageId)
-                    .stream().map(LabelInfo::new)
+            List<EntityAnnotation> entityAnnotations =
+                    DetectLabelsGcs.getEntityAnnotations(imageLocation.bucketName(), imageLocation.blobName());
+
+            if (entityAnnotations == null) {
+                firestoreOperations.save(new ImageInfo(imageLocation.id(), Timestamp.now().toDate(), Collections.emptyList()));
+                return;
+            }
+
+            List<LabelInfo> labelInfo = entityAnnotations
+                    .stream()
+                    .map(LabelInfo::new)
                     .map(label -> {
                         Translation translation =
                                 translate.translate(
@@ -61,7 +73,7 @@ public class MessageReceiveHandler implements MessageReceiver {
                     }).toList();
 
 
-            firestoreOperations.save(new ImageInfo(imageId, Timestamp.now().toDate(), labels));
+            firestoreOperations.save(new ImageInfo(imageLocation.id(), Timestamp.now().toDate(), labelInfo));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

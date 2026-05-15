@@ -4,7 +4,9 @@ import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 
 public class StorageOperations {
 
@@ -12,7 +14,7 @@ public class StorageOperations {
 
     private final Storage storage;
 
-    public StorageOperations(Storage storage) {
+    public StorageOperations(@Nonnull Storage storage) {
         this.storage = storage;
     }
 
@@ -35,7 +37,7 @@ public class StorageOperations {
             channel = storage.writer(blobInfo);
         }
 
-        public void upload(ByteBuffer content) throws Exception {
+        public void upload(ByteBuffer content) throws IOException {
             channel.write(content);
         }
 

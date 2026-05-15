@@ -1,19 +1,23 @@
 package isel.image.analyzer.server;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import io.grpc.ServerBuilder;
 
+import isel.image.analyzer.server.firestore.FirestoreOperations;
 import java.io.IOException;
 
 public class App {
 
     private static int svcPort = 8000;
 
-    public static void main(String[] args) throws InterruptedException, IOException {
+    static void main(String[] args) throws InterruptedException, IOException {
 
         //does not check if it has right permissions
-        if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null){
+        if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
             System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
             System.exit(-1);
         }
@@ -32,10 +36,18 @@ public class App {
 
         if (args.length > 0) svcPort = Integer.parseInt(args[0]);
 
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+
+        FirestoreOptions options = FirestoreOptions
+                .newBuilder().setDatabaseId("public-spaces-standard").setCredentials(credentials)
+                .build();
+
+        Firestore db = options.getService();
+
         io.grpc.Server svc = ServerBuilder.forPort(svcPort)
                 // Add one or more services.
                 // The Server can host many services in same TCP/IP port
-                .addService(new ServiceImpl(new StorageOperations(storage)))
+                .addService(new ServiceImpl(new StorageOperations(storage), new PubSub(projID), new FirestoreOperations(db)))
                 .build();
 
         svc.start();

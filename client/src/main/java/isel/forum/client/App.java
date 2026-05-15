@@ -1,10 +1,7 @@
 package isel.forum.client;
 
 import com.google.cloud.Timestamp;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Empty;
 import image.analyzer.SearchByDateIntervalAndLabel;
 import image.analyzer.ImageAnalyserGrpc;
 import image.analyzer.ImageCharacteristics;
@@ -16,7 +13,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,7 +37,7 @@ public class App {
     private static ImageAnalyserGrpc.ImageAnalyserBlockingStub blockingStub;
     private static ImageAnalyserGrpc.ImageAnalyserStub noBlockStub;
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
 
 
         try {
@@ -97,6 +93,11 @@ public class App {
     }
 
     /**
+     * todo decide max size
+     */
+    static int ARR_SIZE = 1_000_000;
+
+    /**
      * Probably better to add here a check on type of file
      *
      */
@@ -115,17 +116,21 @@ public class App {
          */
         try (FileInputStream fileInputStream = new FileInputStream(selectedFile)) {
 
-            byte[] arr = new byte[(int) selectedFile.length()];
+            //long size = selectedFile.length();
 
-            fileInputStream.read(arr);
+            byte[] arr = new byte[ARR_SIZE];
 
             ImageIdentifierStream imageIdentifierStream = new ImageIdentifierStream();
 
             StreamObserver<ImageSend> imageSendStreamObserver = noBlockStub.publishImage(imageIdentifierStream);
 
-            imageSendStreamObserver
-                    .onNext(ImageSend.newBuilder().setName(selectedFile.getName()).setChunkData(ByteString.copyFrom(arr)).build());
+            while (fileInputStream.read(arr) != -1) {
 
+                imageSendStreamObserver
+                        .onNext(ImageSend.newBuilder().setName(selectedFile.getName()).setChunkData(ByteString.copyFrom(arr)).build());
+
+            }
+            
             imageSendStreamObserver.onCompleted();
 
 

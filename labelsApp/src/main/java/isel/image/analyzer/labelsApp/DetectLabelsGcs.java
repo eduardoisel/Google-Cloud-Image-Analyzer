@@ -14,7 +14,7 @@ import java.util.List;
 
 public class DetectLabelsGcs {
 
-    static String bucket = "gs://cn_g08_europe/"; //todo decide
+    public static String bucket = "gs://cn_g08_europe/"; //todo decide
 
     // Detects labels in the specified remote image on Google Cloud Storage.
     public static void detectLabelsGcs(String gcsPath) throws IOException {
@@ -51,10 +51,10 @@ public class DetectLabelsGcs {
     }
 
 
-    public static List<EntityAnnotation> getEntityAnnotations(String gcsPath) throws IOException {
+    public static List<EntityAnnotation> getEntityAnnotations(String bucketName, String blobId) throws IOException {
         List<AnnotateImageRequest> requests = new ArrayList<>();
 
-        ImageSource imgSource = ImageSource.newBuilder().setGcsImageUri(bucket + gcsPath).build();
+        ImageSource imgSource = ImageSource.newBuilder().setGcsImageUri("gs://" +  bucketName + "/" + blobId).build();
         Image img = Image.newBuilder().setSource(imgSource).build();
         Feature feat = Feature.newBuilder().setType(Feature.Type.LABEL_DETECTION).build();
         AnnotateImageRequest request =

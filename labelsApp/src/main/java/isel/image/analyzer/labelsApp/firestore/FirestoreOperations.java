@@ -33,18 +33,4 @@ public class FirestoreOperations {
         System.out.println("Update time : " + result.getUpdateTime());
     }
 
-    public List<ImageInfo> search(@Nonnull Date startDate, @Nonnull Date endDate, @Nonnull String characteristic)
-            throws ExecutionException, InterruptedException {
-
-        Query query = collectionReference
-                //.whereEqualTo("", startDate) //to see how
-                .whereGreaterThan("processingDate", startDate)
-                .whereLessThan("processingDate", endDate);
-
-        QuerySnapshot querySnapshot = query.get().get();
-
-        return querySnapshot.getDocuments().stream().map(doc -> doc.toObject(ImageInfo.class)).toList();
-
-    }
-
 }
