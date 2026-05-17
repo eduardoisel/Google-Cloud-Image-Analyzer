@@ -24,10 +24,9 @@ public class FirestoreOperations {
             throws ExecutionException, InterruptedException {
 
         Query query = collectionReference
-                //.whereEqualTo("", startDate) //to see how
-                .whereArrayContains("labels",  characteristic)
-                .whereGreaterThan("processingDate", startDate)
-                .whereLessThan("processingDate", endDate);
+                .whereArrayContains("labelNames",  characteristic)
+                .whereGreaterThanOrEqualTo("processingDate", startDate)
+                .whereLessThanOrEqualTo("processingDate", endDate);
 
         QuerySnapshot querySnapshot = query.get().get();
 

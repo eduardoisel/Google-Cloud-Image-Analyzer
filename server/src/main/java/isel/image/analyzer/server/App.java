@@ -1,7 +1,6 @@
 package isel.image.analyzer.server;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -42,12 +41,11 @@ public class App {
                 .newBuilder().setDatabaseId("public-spaces-standard").setCredentials(credentials)
                 .build();
 
-        Firestore db = options.getService();
+        FirestoreOperations db = new FirestoreOperations(options.getService());
+
 
         io.grpc.Server svc = ServerBuilder.forPort(svcPort)
-                // Add one or more services.
-                // The Server can host many services in same TCP/IP port
-                .addService(new ServiceImpl(new StorageOperations(storage), new PubSub(projID), new FirestoreOperations(db)))
+                .addService(new ServiceImpl(new StorageOperations(storage), new PubSub(projID), db))
                 .build();
 
         svc.start();
@@ -57,5 +55,6 @@ public class App {
         Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
         // Waits for the server to become terminated
         svc.awaitTermination();
+
     }
 }

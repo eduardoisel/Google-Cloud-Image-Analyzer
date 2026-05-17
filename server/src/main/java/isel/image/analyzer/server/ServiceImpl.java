@@ -100,6 +100,13 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
 
         try {
             ImageInfo imageInfo = firestoreOperations.search(request.getId());
+
+            if (imageInfo == null) {
+                responseObserver.onError(new StatusException(Status.NOT_FOUND));
+                responseObserver.onCompleted();
+                return;
+            }
+
             responseObserver.onNext(ImageCharacteristics.newBuilder().addAllCharacteristic(imageInfo.labelNames()).build());
             responseObserver.onCompleted();
         } catch (Exception e) {
