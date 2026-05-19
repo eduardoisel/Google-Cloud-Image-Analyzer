@@ -40,7 +40,6 @@
     </dependency>
 
 
-    <!-- Firestore -->
     <!-- Source: https://mvnrepository.com/artifact/com.google.cloud/google-cloud-firestore -->
     <dependency>
         <groupId>com.google.cloud</groupId>

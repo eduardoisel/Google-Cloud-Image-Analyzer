@@ -15,15 +15,17 @@ public class App {
 
     static void main(String[] args) throws InterruptedException, IOException {
 
+        System.getenv().forEach((k, v) ->  System.out.println(k + ": " + v)); //for vm in gcloud
+
         //does not check if it has right permissions
         if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
-            System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS isn't well defined!!");
+        System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS was not found");
             System.exit(-1);
         }
 
 
         StorageOptions storageOptions = StorageOptions.getDefaultInstance();
-        Storage storage = storageOptions.getService(); //actually used for  bucket operations, see lab3
+        Storage storage = storageOptions.getService();
 
         //extra check of GOOGLE_APPLICATION_CREDENTIALS keys, left to ease debugging as (i think) it will be needed to run on cloud virtual machine
         String projID = storageOptions.getProjectId();

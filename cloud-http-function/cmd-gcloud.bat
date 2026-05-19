@@ -1,0 +1,1 @@
+gcloud functions deploy cf-http-deployed-v2 --project=cn2425-testcf --region=europe-west1 --allow-unauthenticated --entry-point=functionhttp.Entrypoint --gen2 --runtime=java25 --trigger-http --source=target/deployment

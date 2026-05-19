@@ -14,6 +14,7 @@ import io.grpc.stub.StreamObserver;
 import isel.image.analyzer.server.firestore.FirestoreOperations;
 import isel.image.analyzer.server.firestore.ImageInfo;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
