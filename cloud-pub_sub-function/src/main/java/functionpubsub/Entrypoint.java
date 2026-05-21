@@ -14,13 +14,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-
-// gcloud functions deploy funcPubSub --project=cn2526-t4-g08 --region=europe-west1 --entry-point=functionpubsub.Entrypoint --allow-unauthenticated --gen2 --runtime=java25 --trigger-topic cf-topic-pubsub-base --source=target/deployment --service-account=firestore@cn2526-geral.iam.gserviceaccount.com
 public class Entrypoint implements BackgroundFunction<PSMessage> {
-
-    static String projectID = "cn2526-t4-g08";
-
-    static String managedInstanceGroupName = "image-label-Servers";
 
     Logger logger = Logger.getLogger(Entrypoint.class.getName());
 
@@ -46,10 +40,12 @@ public class Entrypoint implements BackgroundFunction<PSMessage> {
             logger.info("Error connecting to Firestore. Exiting function.");
             throw new RuntimeException("Error connecting to Firestore");
         }
+
         logger.info("original message " + message.data);
         String dataAsString = new String(Base64.getDecoder().decode(message.data));
         logger.info(dataAsString);
         CollectionReference colRef = db.collection("CFPubSubMessages");
+
         // O message ID vem no eventID
         DocumentReference docRef = colRef.document(context.eventId());
         HashMap<String, Object> map = new HashMap<>();
