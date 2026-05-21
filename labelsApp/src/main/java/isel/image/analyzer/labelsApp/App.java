@@ -51,7 +51,7 @@ public class App {
 
     }
 
-
+    // Vai ao tópico Image buscar os ID s das imagens publicados pelo server
     public static void subscribe() {
 
         ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, subscriptionId);
@@ -68,5 +68,7 @@ public class App {
 
         subscriber.awaitTerminated();
 
+        // Para terminar a subscrição
+        // subscriber.stopAsync();
     }
 }

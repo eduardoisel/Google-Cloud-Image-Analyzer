@@ -18,6 +18,8 @@ import java.util.List;
 
 /**
  * Receive just name/id as a way retrieve from cloud storage and analyze/translate
+ *
+ * Handler de receção de mensagens
  */
 public class MessageReceiveHandler implements MessageReceiver {
 

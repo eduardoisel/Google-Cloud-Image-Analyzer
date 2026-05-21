@@ -44,10 +44,14 @@ public class App {
                 .build();
 
         FirestoreOperations db = new FirestoreOperations(options.getService());
+        PubSub pubsub = new PubSub(projID);
 
+        // Inicializar o Pub/sub
+        pubsub.start();
 
+        // construtor do servdior
         io.grpc.Server svc = ServerBuilder.forPort(svcPort)
-                .addService(new ServiceImpl(new StorageOperations(storage), new PubSub(projID), db))
+                .addService(new ServiceImpl(new StorageOperations(storage), pubsub, db))
                 .build();
 
         svc.start();
@@ -56,7 +60,9 @@ public class App {
         // to capture normal or abnormal exits
         Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
         // Waits for the server to become terminated
-        svc.awaitTermination();
 
+        svc.awaitTermination();
+        // acabar o publisher, qaundo o sevridor acaba
+        pubsub.shutdown();
     }
 }

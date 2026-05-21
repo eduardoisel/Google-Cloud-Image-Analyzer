@@ -7,6 +7,8 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.TopicName;
 
+import java.io.IOException;
+
 public class PubSub {
 
     private final String projectId;
@@ -20,14 +22,19 @@ public class PubSub {
 
     static String TOPIC_ID = "Image";
 
+    Gson gsonMsg = new Gson();
+
+    Publisher publisher;
+
+    public void start() throws IOException {
+        TopicName topicName = TopicName.ofProjectTopicName(projectId, TOPIC_ID);
+        publisher = Publisher.newBuilder(topicName).build();
+    }
 
     public void publishMessage(String imageId) throws Exception {
 
-        Gson gsonMsg = new Gson();
         String jsonMsg = gsonMsg.toJson(new ImageLocation("cn_g08_europe", imageId, imageId));
 
-        TopicName topicName = TopicName.ofProjectTopicName(projectId, TOPIC_ID);
-        Publisher publisher = Publisher.newBuilder(topicName).build();
         ByteString msgData = ByteString.copyFromUtf8(jsonMsg);
         PubsubMessage pubsubMessage = PubsubMessage.newBuilder()
                 .setData(msgData)
@@ -36,6 +43,9 @@ public class PubSub {
         ApiFuture<String> future = publisher.publish(pubsubMessage);
         String msgID = future.get();
         System.out.println("Message Published with ID=" + msgID);
+    }
+
+    public void shutdown(){
         publisher.shutdown();
     }
 }
