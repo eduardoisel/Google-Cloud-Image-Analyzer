@@ -5,7 +5,6 @@ import com.google.cloud.compute.v1.InstancesClient;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
-
 import com.google.gson.Gson;
 import java.io.BufferedWriter;
 import java.util.Arrays;
@@ -86,8 +85,9 @@ public class Entrypoint implements HttpFunction {
                     String startTime = instance.getLastStartTimestamp();
                     endpointInfo.add(new EndpointInfo(ip, startTime));
                 }
-                writer.write(gson.toJson(endpointInfo));
             }
+
+            writer.write(gson.toJson(new VirtualMachineInstances(endpointInfo)));
         } catch (Exception e) {
             writer.write(Arrays.toString(e.getStackTrace()));
         }

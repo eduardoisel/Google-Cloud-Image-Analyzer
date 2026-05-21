@@ -1,6 +1,7 @@
 package isel.forum.client;
 
 import com.google.cloud.Timestamp;
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import image.analyzer.SearchByDateIntervalAndLabel;
 import image.analyzer.ImageAnalyserGrpc;
@@ -14,28 +15,55 @@ import io.grpc.stub.StreamObserver;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.*;
 
-/**
- * mvn exec:java -Dexec.mainClass="grpcclientapp.Client"
- * Start on command line with line above
- * <p>
- * Lock probably good to be removed, left only because if necessary adding it all in would be more tiresome
- */
 public class App {
 
     public static Lock lock = new ReentrantLock();
 
-    // generic ClientApp for Calling a grpc Service
-    private static String svcIP = "localhost";
+    private static String svcIP = "localhost";   // "localhost"
     private static int svcPort = 8000;
     private static ImageAnalyserGrpc.ImageAnalyserBlockingStub blockingStub;
     private static ImageAnalyserGrpc.ImageAnalyserStub noBlockStub;
+
+
+    public record VirtualMachineInstances(List<EndpointInfo> list) {}
+
+
+
+    public static VirtualMachineInstances search() throws IOException, InterruptedException {
+        String cfURL="https://europe-southwest1-cn2526-t4-g08.cloudfunctions.net/serverLookup?zone=europe-southwest1-a";
+        HttpClient client = HttpClient.newBuilder().build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(cfURL))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if(response.statusCode() == 200) System.out.println(response.body());
+
+        else System.out.println("Endpoint failed, status code " + response.statusCode());
+
+        Gson gson = new Gson();
+
+        try {
+            return gson.fromJson(response.body(), VirtualMachineInstances.class);
+        }catch (Exception e){
+            return null;
+        }
+
+    }
+
 
     static void main(String[] args) {
 
@@ -48,14 +76,23 @@ public class App {
             }
 
 
-            System.out.println("connect to " + svcIP + ":" + svcPort);
-            // Channels are secure by default (via SSL/TLS).
-            // For the example we disable TLS to avoid
-            // needing certificates.
+
+
+//            System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
+//                    .parse(search().list.getFirst().startTimestamp()));
+
+            VirtualMachineInstances virtualMachineInstances = search();
+
+            if (virtualMachineInstances == null || virtualMachineInstances.list.isEmpty()) {
+                System.out.println("Virtual machine instances not found");
+                System.exit(1);
+            }
+
+
+
+
+            System.out.println("connect to " + virtualMachineInstances.list.getFirst().IpAddress() + ":" + svcPort);
             ManagedChannel channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
-                    // Channels are secure by default (via SSL/TLS).
-                    // For the example we disable TLS to avoid
-                    // needing certificates.
                     .usePlaintext()
                     .build();
             blockingStub = ImageAnalyserGrpc.newBlockingStub(channel);

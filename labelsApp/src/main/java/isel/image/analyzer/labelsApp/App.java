@@ -14,7 +14,7 @@ import java.io.IOException;
 
 public class App {
 
-    static String subscriptionId = "Image-sub"; //todo decide
+    static String subscriptionId = "Image-sub";
 
     static String projectId;
     static Translate translate;
@@ -24,7 +24,11 @@ public class App {
 
         StorageOptions storageOptions = StorageOptions.getDefaultInstance();
 
-        //extra check of GOOGLE_APPLICATION_CREDENTIALS keys, left to ease debugging as (i think) it will be needed to run on cloud virtual machine
+        if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
+            System.out.println("GOOGLE_APPLICATION_CREDENTIALS is not set");
+            System.exit(-1);
+        }
+
         projectId = storageOptions.getProjectId();
         if (projectId != null) System.out.println("Current Project ID:" + projectId);
         else {
