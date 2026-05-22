@@ -10,9 +10,6 @@ import java.io.BufferedWriter;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-
-//see path on --source. absolute path works, to relative maybe not
-// gcloud functions deploy serverLookup --project=cn2526-t4-g08 --allow-unauthenticated --entry-point=functionhttp.Entrypoint --gen2 --runtime=java25 --trigger-http --region=europe-southwest1 --source=C:\Users\Edu\Desktop\CN\trab\cloud-Image-Analyzer\cloud-http-function\target\deployment
 public class Entrypoint implements HttpFunction {
 
     static String projectID = "cn2526-t4-g08";
