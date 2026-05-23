@@ -11,6 +11,8 @@ import image.analyzer.ImageNames;
 import image.analyzer.ImageSend;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,28 +23,24 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import javax.swing.*;
+import org.jspecify.annotations.NonNull;
 
 public class App {
 
-    public static Lock lock = new ReentrantLock();
 
-    private static String svcIP = "localhost";   // "localhost"
+    private static String svcIP;   // "localhost"
     private static int svcPort = 8000;
     private static ImageAnalyserGrpc.ImageAnalyserBlockingStub blockingStub;
     private static ImageAnalyserGrpc.ImageAnalyserStub noBlockStub;
 
-
-    public record VirtualMachineInstances(List<EndpointInfo> list) {}
-
+    private static Comparator<EndpointInfo> comparator = endpointInfoComparator();
 
 
     public static VirtualMachineInstances search() throws IOException, InterruptedException {
-        String cfURL="https://europe-southwest1-cn2526-t4-g08.cloudfunctions.net/serverLookup?zone=europe-southwest1-a";
+        String cfURL = "https://europe-southwest1-cn2526-t4-g08.cloudfunctions.net/serverLookup?zone=europe-southwest1-a";
         HttpClient client = HttpClient.newBuilder().build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(cfURL))
@@ -50,7 +48,7 @@ public class App {
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if(response.statusCode() == 200) System.out.println(response.body());
+        if (response.statusCode() == 200) System.out.println(response.body());
 
         else System.out.println("Endpoint failed, status code " + response.statusCode());
 
@@ -58,75 +56,108 @@ public class App {
 
         try {
             return gson.fromJson(response.body(), VirtualMachineInstances.class);
-        }catch (Exception e){
-            return null;
+        } catch (Exception e) {
+            throw e;
         }
 
     }
 
-
-    static void main(String[] args) {
-
-
+    private static void getServer() {
         try {
-            System.out.println();
-            if (args.length == 2) {
-                svcIP = args[0];
-                svcPort = Integer.parseInt(args[1]);
-            }
-
-
-
-
-//            System.out.println(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
-//                    .parse(search().list.getFirst().startTimestamp()));
-
             VirtualMachineInstances virtualMachineInstances = search();
 
-            if (virtualMachineInstances == null || virtualMachineInstances.list.isEmpty()) {
+            if (virtualMachineInstances == null || virtualMachineInstances.list().isEmpty()) {
                 System.out.println("Virtual machine instances not found");
                 System.exit(1);
             }
 
+            EndpointInfo youngest = virtualMachineInstances.list().stream().max(comparator).get();
+            svcIP = youngest.IpAddress();
 
 
-
-            System.out.println("connect to " + virtualMachineInstances.list.getFirst().IpAddress() + ":" + svcPort);
-            ManagedChannel channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
-                    .usePlaintext()
-                    .build();
-            blockingStub = ImageAnalyserGrpc.newBlockingStub(channel);
-            noBlockStub = ImageAnalyserGrpc.newStub(channel);
-
-
-            while (true) {
-                try {
-                    int option = Menu();
-                    switch (option) {
-                        case 1:
-                            sendImage();
-                            break;
-                        case 2:
-                            getLabelsOfImage();
-                            break;
-                        case 3:
-                            getImagesByDateIntervalAndLabel();
-                            break;
-                        case 99:
-                            System.exit(0);
-                        default:
-                            System.out.printf("Option %d is not available", option);
-                            break;
-                    }
-                } catch (Exception ex) {
-                    System.out.println("Execution call Error  !");
-                    ex.printStackTrace();
-                }
-            }
-        } catch (Exception ex) {
+        } catch (Exception e) {
             System.out.println("Unhandled exception");
-            ex.printStackTrace();
+            throw new RuntimeException(e);
         }
+    }
+
+
+    static void main() {
+//            if (args.length == 2) {
+//                svcIP = args[0];
+//                svcPort = Integer.parseInt(args[1]);
+//            }
+
+
+        getServer();
+
+
+        System.out.println("connect to " + svcIP + ":" + svcPort);
+
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
+                .usePlaintext()
+                .build();
+        blockingStub = ImageAnalyserGrpc.newBlockingStub(channel);
+        noBlockStub = ImageAnalyserGrpc.newStub(channel);
+
+
+        while (true) {
+            try {
+                int option = Menu();
+                switch (option) {
+                    case 1:
+                        sendImage();
+                        break;
+                    case 2:
+                        getLabelsOfImage();
+                        break;
+                    case 3:
+                        getImagesByDateIntervalAndLabel();
+                        break;
+                    case 99:
+                        System.exit(0);
+                    default:
+                        System.out.printf("Option %d is not available", option);
+                        break;
+                }
+            } catch (StatusRuntimeException e) {
+                if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
+                    getServer();
+                } else {
+                    System.out.println("Unhandled exception");
+                    System.out.println(e.getStatus());
+                }
+
+            } catch (Exception ex) {
+                System.out.println("Execution call Error  !");
+                ex.printStackTrace();
+            }
+        }
+
+    }
+
+    // https://stackoverflow.com/questions/289311/output-rfc-3339-timestamp-in-java
+    // https://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html#iso8601timezone
+    private static @NonNull Comparator<EndpointInfo> endpointInfoComparator() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+
+        //ignore possible case of being equal
+        Comparator<EndpointInfo> comparator = (o1, o2) -> {
+            try {
+                Date date = sdf.parse(o1.startTimestamp());
+                Date date2 = sdf.parse(o2.startTimestamp());
+
+                if (date.after(date2))
+                    return 1;
+                else
+                    return -1;
+
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+
+        };
+        return comparator;
     }
 
     /**
@@ -167,7 +198,7 @@ public class App {
                         .onNext(ImageSend.newBuilder().setName(selectedFile.getName()).setChunkData(ByteString.copyFrom(arr)).build());
 
             }
-            
+
             imageSendStreamObserver.onCompleted();
 
 
@@ -187,13 +218,11 @@ public class App {
 
         int count = characteristics.getCharacteristicCount();
 
-        lock.lock();
         System.out.print("Image characteristics: ");
         for (int i = 0; i < count; i++) {
             System.out.print(characteristics.getCharacteristic(i) + "; ");
         }
         System.out.println();
-        lock.unlock();
 
     }
 
@@ -223,13 +252,11 @@ public class App {
 
         int count = imageNames.getNameCount();
 
-        lock.lock();
         System.out.print("Image names: ");
         for (int i = 0; i < count; i++) {
             System.out.print(imageNames.getName(i) + "; ");
         }
         System.out.println();
-        lock.unlock();
 
     }
 
@@ -242,7 +269,6 @@ public class App {
         int op;
         Scanner scan = new Scanner(System.in);
         do {
-            lock.lock();
             System.out.println();
             System.out.println("    MENU");
             System.out.println(" 1 - Send image");
@@ -251,17 +277,13 @@ public class App {
             System.out.println("99 - Exit");
             System.out.println();
             System.out.println("Choose an Option?");
-            lock.unlock();
             op = scan.nextInt();
         } while (!((op >= 1 && op <= 3) || op == 99));
         return op;
     }
 
     private static String read(String msg, Scanner input) {
-        lock.lock();
         System.out.println(msg);
-        lock.unlock();
-
         return input.nextLine();
     }
 
