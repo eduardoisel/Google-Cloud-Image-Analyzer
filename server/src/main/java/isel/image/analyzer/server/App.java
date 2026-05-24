@@ -1,6 +1,7 @@
 package isel.image.analyzer.server;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.compute.v1.InstanceGroupManagersClient;
 import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -15,11 +16,9 @@ public class App {
 
     static void main(String[] args) throws InterruptedException, IOException {
 
-        System.getenv().forEach((k, v) ->  System.out.println(k + ": " + v)); //for vm in gcloud
-
         //does not check if it has right permissions
         if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
-        System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS was not found");
+            System.out.println("The environment variable GOOGLE_APPLICATION_CREDENTIALS was not found");
             System.exit(-1);
         }
 
@@ -44,25 +43,29 @@ public class App {
                 .build();
 
         FirestoreOperations db = new FirestoreOperations(options.getService());
-        PubSub pubsub = new PubSub(projID);
 
-        // Inicializar o Pub/sub
-        pubsub.start();
 
-        // construtor do servdior
-        io.grpc.Server svc = ServerBuilder.forPort(svcPort)
-                .addService(new ServiceImpl(new StorageOperations(storage), pubsub, db))
-                .build();
+        try (
+                PubSub pubsub = new PubSub(projID);
+                InstanceGroupManagersClient groupManagersClient = InstanceGroupManagersClient.create()) {
 
-        svc.start();
-        System.out.println("Server started on port " + svcPort);
-        // Java virtual machine shutdown hook
-        // to capture normal or abnormal exits
-        Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
-        // Waits for the server to become terminated
+            // construtor do servdior
+            io.grpc.Server svc = ServerBuilder.forPort(svcPort)
+                    .addService(new ImageAnalyzerService(new StorageOperations(storage), pubsub, db))
+                    .addService(new ElasticityService(projID, groupManagersClient))
+                    .build();
 
-        svc.awaitTermination();
-        // acabar o publisher, qaundo o sevridor acaba
-        pubsub.shutdown();
+            svc.start();
+            System.out.println("Server started on port " + svcPort);
+            // Java virtual machine shutdown hook
+            // to capture normal or abnormal exits
+            Runtime.getRuntime().addShutdownHook(new ShutdownHook(svc));
+            // Waits for the server to become terminated
+
+            svc.awaitTermination();
+
+        }
+
+
     }
 }

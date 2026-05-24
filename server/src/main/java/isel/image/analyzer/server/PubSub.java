@@ -9,12 +9,16 @@ import com.google.pubsub.v1.TopicName;
 
 import java.io.IOException;
 
-public class PubSub {
+public class PubSub implements AutoCloseable{
 
-    private final String projectId;
+    public PubSub(String projectId) throws IOException {
+        TopicName topicName = TopicName.ofProjectTopicName(projectId, TOPIC_ID);
+        publisher = Publisher.newBuilder(topicName).build();
+    }
 
-    public PubSub(String projectId) {
-        this.projectId = projectId;
+    @Override
+    public void close() {
+        publisher.shutdown();
     }
 
     public record ImageLocation(String bucketName, String blobName, String id) {
@@ -26,10 +30,6 @@ public class PubSub {
 
     Publisher publisher;
 
-    public void start() throws IOException {
-        TopicName topicName = TopicName.ofProjectTopicName(projectId, TOPIC_ID);
-        publisher = Publisher.newBuilder(topicName).build();
-    }
 
     public void publishMessage(String imageId) throws Exception {
 
@@ -45,7 +45,4 @@ public class PubSub {
         System.out.println("Message Published with ID=" + msgID);
     }
 
-    public void shutdown(){
-        publisher.shutdown();
-    }
 }

@@ -3,12 +3,14 @@ package isel.forum.client;
 import com.google.cloud.Timestamp;
 import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
+import image.analyzer.ElasticityGrpc;
 import image.analyzer.SearchByDateIntervalAndLabel;
 import image.analyzer.ImageAnalyserGrpc;
 import image.analyzer.ImageCharacteristics;
 import image.analyzer.ImageIdentifier;
 import image.analyzer.ImageNames;
 import image.analyzer.ImageSend;
+import image.analyzer.VmQuantities;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -31,16 +33,18 @@ import org.jspecify.annotations.NonNull;
 public class App {
 
 
-    private static String svcIP;   // "localhost"
-    private static int svcPort = 8000;
+    private static String svcIP = "localhost";   // "localhost"
+    private static final int svcPort = 8000;
     private static ImageAnalyserGrpc.ImageAnalyserBlockingStub blockingStub;
     private static ImageAnalyserGrpc.ImageAnalyserStub noBlockStub;
 
-    private static Comparator<EndpointInfo> comparator = endpointInfoComparator();
+    private static ElasticityGrpc.ElasticityBlockingStub elasticityBlockingStub;
 
+    private static final Comparator<EndpointInfo> comparator = endpointInfoComparator();
 
     public static VirtualMachineInstances search() throws IOException, InterruptedException {
         String cfURL = "https://europe-southwest1-cn2526-t4-g08.cloudfunctions.net/serverLookup?zone=europe-southwest1-a";
+
         HttpClient client = HttpClient.newBuilder().build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(cfURL))
@@ -62,7 +66,7 @@ public class App {
 
     }
 
-    private static void getServer() {
+    private static void searchServer() {
         try {
             VirtualMachineInstances virtualMachineInstances = search();
 
@@ -74,7 +78,6 @@ public class App {
             EndpointInfo youngest = virtualMachineInstances.list().stream().max(comparator).get();
             svcIP = youngest.IpAddress();
 
-
         } catch (Exception e) {
             System.out.println("Unhandled exception");
             throw new RuntimeException(e);
@@ -82,16 +85,7 @@ public class App {
     }
 
 
-    static void main() {
-//            if (args.length == 2) {
-//                svcIP = args[0];
-//                svcPort = Integer.parseInt(args[1]);
-//            }
-
-
-        getServer();
-
-
+    private static void connectToServer(){
         System.out.println("connect to " + svcIP + ":" + svcPort);
 
         ManagedChannel channel = ManagedChannelBuilder.forAddress(svcIP, svcPort)
@@ -100,6 +94,15 @@ public class App {
         blockingStub = ImageAnalyserGrpc.newBlockingStub(channel);
         noBlockStub = ImageAnalyserGrpc.newStub(channel);
 
+        elasticityBlockingStub = ElasticityGrpc.newBlockingStub(channel);
+
+    }
+
+
+    static void main() {
+
+        //searchServer();
+        connectToServer();
 
         while (true) {
             try {
@@ -114,6 +117,12 @@ public class App {
                     case 3:
                         getImagesByDateIntervalAndLabel();
                         break;
+                    case 4:
+                        redimensionServers();
+                        break;
+                    case 5:
+                        redimensionLabelApps();
+                        break;
                     case 99:
                         System.exit(0);
                     default:
@@ -122,7 +131,7 @@ public class App {
                 }
             } catch (StatusRuntimeException e) {
                 if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
-                    getServer();
+                    connectToServer();
                 } else {
                     System.out.println("Unhandled exception");
                     System.out.println(e.getStatus());
@@ -160,15 +169,8 @@ public class App {
         return comparator;
     }
 
-    /**
-     * todo decide max size
-     */
     static int ARR_SIZE = 1_000_000;
 
-    /**
-     * Probably better to add here a check on type of file
-     *
-     */
     static void sendImage() {
 
         String fileName = read("Insert absolute path for image file", new Scanner(System.in));
@@ -260,6 +262,25 @@ public class App {
 
     }
 
+
+    static void redimensionServers(){
+
+        int quantity = Integer.parseInt(read("Choose the amount of servers", new Scanner(System.in)));
+
+        elasticityBlockingStub.setServerAmount(VmQuantities.newBuilder().setQuantity(quantity).build());
+
+
+
+    }
+
+    static void redimensionLabelApps(){
+
+        int quantity = Integer.parseInt(read("Choose the amount of label Apps", new Scanner(System.in)));
+
+        elasticityBlockingStub.setLabelAmount(VmQuantities.newBuilder().setQuantity(quantity).build());
+
+    }
+
     /**
      * print options and collect chosen one
      *
@@ -274,11 +295,13 @@ public class App {
             System.out.println(" 1 - Send image");
             System.out.println(" 2 - Get labels of image");
             System.out.println(" 3 - Get images by date interval and label");
+            System.out.println(" 4 - Redimension servers");
+            System.out.println(" 5 - Redimension label apps");
             System.out.println("99 - Exit");
             System.out.println();
             System.out.println("Choose an Option?");
             op = scan.nextInt();
-        } while (!((op >= 1 && op <= 3) || op == 99));
+        } while (!((op >= 1 && op <= 5) || op == 99));
         return op;
     }
 

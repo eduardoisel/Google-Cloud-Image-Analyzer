@@ -14,7 +14,6 @@ import io.grpc.stub.StreamObserver;
 import isel.image.analyzer.server.firestore.FirestoreOperations;
 import isel.image.analyzer.server.firestore.ImageInfo;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,7 +22,7 @@ import java.util.UUID;
  * unsubscribing. There may be other issues such as when user loses internet connection, but avoids terminal app
  * simply being closed without all topic unsubscribe
  */
-public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
+public class ImageAnalyzerService extends ImageAnalyserGrpc.ImageAnalyserImplBase {
 
     private final StorageOperations storageOperations;
 
@@ -31,7 +30,7 @@ public class ServiceImpl extends ImageAnalyserGrpc.ImageAnalyserImplBase {
 
     private final FirestoreOperations firestoreOperations;
 
-    public ServiceImpl(StorageOperations storageOperations, PubSub pubSub, FirestoreOperations firestoreOperations) {
+    public ImageAnalyzerService(StorageOperations storageOperations, PubSub pubSub, FirestoreOperations firestoreOperations) {
         this.storageOperations = storageOperations;
         this.pubSub = pubSub;
         this.firestoreOperations = firestoreOperations;

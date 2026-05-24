@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "image.analyzer";
+package imageAnalyzer;
+
+service Elasticity{
+
+  rpc setServerAmount(VmQuantities) returns (google.protobuf.Empty);
+
+  rpc setLabelAmount(VmQuantities) returns (google.protobuf.Empty);
+}
+
+message VmQuantities{
+  uint32 quantity = 1;
+}
