@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 
 public class StorageOperations {
 
-    private final static String bucketName = "cn_g08_europe"; //todo maybe change to a new one
+    private final static String bucketName = "cn_g08_europe"; 
 
     private final Storage storage;
 
