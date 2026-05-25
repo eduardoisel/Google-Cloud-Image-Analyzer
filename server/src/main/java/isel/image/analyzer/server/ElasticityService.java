@@ -8,9 +8,7 @@ import image.analyzer.ElasticityGrpc;
 import image.analyzer.VmQuantities;
 import io.grpc.Status;
 import io.grpc.StatusException;
-import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 public class ElasticityService extends ElasticityGrpc.ElasticityImplBase {
@@ -31,12 +29,19 @@ public class ElasticityService extends ElasticityGrpc.ElasticityImplBase {
         if (amount > 10) {
             responseObserver
                     .onError(new StatusException(Status.INVALID_ARGUMENT.withDescription("Too many instances. Not permitted. Maximum is 10")));
+            return;
+        }
+
+        if (amount < 0) {
+            responseObserver.onError(new StatusException(Status.INVALID_ARGUMENT.withDescription("Cannot choose a negative number of instances.")));
+            return;
         }
 
         try {
             resizeManagedInstanceGroup("europe-southwest1-a", "server-mig", amount);
         } catch (InterruptedException | ExecutionException e) {
             responseObserver.onError(new StatusException(Status.INTERNAL.withDescription(e.getMessage())));
+            return;
         }
 
         responseObserver.onNext(Empty.newBuilder().build());
@@ -51,12 +56,19 @@ public class ElasticityService extends ElasticityGrpc.ElasticityImplBase {
         if (amount > 10) {
             responseObserver
                     .onError(new StatusException(Status.INVALID_ARGUMENT.withDescription("Too many instances. Not permitted. Maximum is 10")));
+            return;
+        }
+
+        if (amount < 0) {
+            responseObserver.onError(new StatusException(Status.INVALID_ARGUMENT.withDescription("Cannot choose a negative number of instances.")));
+            return;
         }
 
         try {
             resizeManagedInstanceGroup("europe-southwest1-b", "label-app-mig", amount);
         } catch (InterruptedException | ExecutionException e) {
             responseObserver.onError(new StatusException(Status.INTERNAL.withDescription(e.getMessage())));
+            return;
         }
 
         responseObserver.onNext(Empty.newBuilder().build());
