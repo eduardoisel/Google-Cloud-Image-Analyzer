@@ -10,11 +10,10 @@ import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
-public class Entrypoint implements BackgroundFunction<PSMessage> {
+public class Entrypoint implements BackgroundFunction<ImageLocation> {
 
     Logger logger = Logger.getLogger(Entrypoint.class.getName());
 
@@ -35,24 +34,21 @@ public class Entrypoint implements BackgroundFunction<PSMessage> {
     }
 
     @Override
-    public void accept(PSMessage message, Context context) throws Exception {
+    public void accept(ImageLocation message, Context context) throws Exception {
         if (db == null) {
             logger.info("Error connecting to Firestore. Exiting function.");
             throw new RuntimeException("Error connecting to Firestore");
         }
 
-        logger.info("original message " + message.data);
-        String dataAsString = new String(Base64.getDecoder().decode(message.data));
-        logger.info(dataAsString);
+        logger.info("original message " + message.toString());
         CollectionReference colRef = db.collection("CFPubSubMessages");
 
         // O message ID vem no eventID
         DocumentReference docRef = colRef.document(context.eventId());
         HashMap<String, Object> map = new HashMap<>();
-        map.put("msg-data", message.data);
-        map.put("data", dataAsString);
-        if (dataAsString.compareTo("error") == 0)
-            throw new Exception("error forced from data");
+        map.put("image-location", message.bucketName());
+        map.put("image-name", message.blobName());
+        map.put("id", message.id());
         map.put("ctx-messageId", context.eventId());
         map.put("ctx-pubTime", context.timestamp());
         ApiFuture<WriteResult> result = docRef.set(map);

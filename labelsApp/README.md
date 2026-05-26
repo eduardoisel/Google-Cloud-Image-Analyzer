@@ -1,3 +1,11 @@
+# Service Account
+
+Add the following permisssions:
+
+* Cloud Datastore Owner
+* Pub/Sub Admin
+* Storage Admin
+
 # Setup
 
 Create virtual machine, the next steps presume the used name to be labels-app-template. Do not forget to associate an ssh key. Also take note of the value placed on your ssh ke comment.
