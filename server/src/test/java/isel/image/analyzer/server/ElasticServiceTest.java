@@ -10,6 +10,7 @@ import image.analyzer.ElasticityGrpc;
 import image.analyzer.VmQuantities;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
@@ -18,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,8 +27,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
@@ -78,7 +78,9 @@ public class ElasticServiceTest {
                 .setQuantity(-1)
                 .build();
 
-        assertThrows(StatusRuntimeException.class, () -> blockingStub.setServerAmount(vmQuantities));
+        StatusRuntimeException exception = assertThrows(StatusRuntimeException.class, () -> blockingStub.setServerAmount(vmQuantities));
+
+        Assertions.assertEquals(Status.Code.INVALID_ARGUMENT, exception.getStatus().getCode());
 
     }
 

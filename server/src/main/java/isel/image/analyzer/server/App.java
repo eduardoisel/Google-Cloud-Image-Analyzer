@@ -8,6 +8,7 @@ import com.google.cloud.storage.StorageOptions;
 import io.grpc.ServerBuilder;
 
 import isel.image.analyzer.server.firestore.FirestoreOperations;
+import isel.image.analyzer.server.storage.StorageOperations;
 import java.io.IOException;
 
 public class App {

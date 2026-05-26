@@ -1,4 +1,4 @@
-package isel.image.analyzer.server;
+package isel.image.analyzer.server.storage;
 
 import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobId;
@@ -25,15 +25,15 @@ public class StorageOperations {
         BlobId blobId = BlobId.of(bucketName, fileName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType(contentType).build();
 
-        return new ChunkUploader(blobInfo);
+        return new BlobUploader(blobInfo);
 
     }
 
-    public class ChunkUploader {
+    private class BlobUploader implements ChunkUploader {
 
         private final WriteChannel channel;
 
-        public ChunkUploader(BlobInfo blobInfo) {
+        public BlobUploader(BlobInfo blobInfo) {
             channel = storage.writer(blobInfo);
         }
 
@@ -41,7 +41,7 @@ public class StorageOperations {
             channel.write(content);
         }
 
-        public void close() throws Exception {
+        public void close() throws IOException {
             channel.close();
         }
 

@@ -13,6 +13,8 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import isel.image.analyzer.server.firestore.FirestoreOperations;
 import isel.image.analyzer.server.firestore.ImageInfo;
+import isel.image.analyzer.server.storage.ChunkUploader;
+import isel.image.analyzer.server.storage.StorageOperations;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -45,7 +47,7 @@ public class ImageAnalyzerService extends ImageAnalyserGrpc.ImageAnalyserImplBas
 
             String fileName = null;
 
-            StorageOperations.ChunkUploader chunkUploader;
+            ChunkUploader chunkUploader;
 
 
             @Override
@@ -103,10 +105,10 @@ public class ImageAnalyzerService extends ImageAnalyserGrpc.ImageAnalyserImplBas
 
             if (imageInfo == null) {
                 responseObserver.onError(new StatusException(Status.NOT_FOUND));
-                responseObserver.onCompleted();
                 return;
             }
 
+            //only sending labels without certainties
             responseObserver.onNext(ImageCharacteristics.newBuilder().addAllCharacteristic(imageInfo.labelNames()).build());
             responseObserver.onCompleted();
         } catch (Exception e) {
@@ -126,7 +128,7 @@ public class ImageAnalyzerService extends ImageAnalyserGrpc.ImageAnalyserImplBas
                     Timestamp.fromProto(request.getEndDate()),
                     request.getLabel());
 
-            //todo only sending labels without certainties
+            //only sending ids
             responseObserver
                     .onNext(ImageNames.newBuilder().addAllName(imageInfo.stream().map(ImageInfo::id).toList()).build());
 
@@ -135,7 +137,6 @@ public class ImageAnalyzerService extends ImageAnalyserGrpc.ImageAnalyserImplBas
         } catch (Exception e) {
             responseObserver.onError(new StatusException(Status.ABORTED));
         }
-
 
     }
 

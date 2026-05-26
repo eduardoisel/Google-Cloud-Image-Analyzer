@@ -101,7 +101,10 @@ public class App {
 
     static void main() {
 
-        //searchServer();
+        //dynamic server search, remove for localhost
+        searchServer();
+
+        //locahost, skips search and keeps default value
         connectToServer();
 
         while (true) {
@@ -131,6 +134,7 @@ public class App {
                 }
             } catch (StatusRuntimeException e) {
                 if (e.getStatus().getCode().equals(Status.Code.UNAVAILABLE)) {
+                    searchServer();
                     connectToServer();
                 } else {
                     System.out.println("Unhandled exception");
@@ -179,11 +183,7 @@ public class App {
         File selectedFile = path.toFile();
         System.out.println("Selected file: " + selectedFile.getAbsolutePath());
 
-        /*
-         * Warning:Since it is a stream, as is required, should probably not send all at once
-         *
-         * to decide a reasonable size
-         */
+        
         try (FileInputStream fileInputStream = new FileInputStream(selectedFile)) {
 
             //long size = selectedFile.length();

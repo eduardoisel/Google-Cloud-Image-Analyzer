@@ -53,30 +53,12 @@
         <version>1.101.0</version>
     </dependency>
 
-    <!-- Source: https://mvnrepository.com/artifact/junit/junit -->
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.13.2</version>
-        <scope>test</scope>
-    </dependency>
-
     <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-testing</artifactId>
         <version>1.80.0</version>
         <scope>test</scope>
     </dependency>
-
-    <!--
-    <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>5.10.5</version>
-        <scope>test</scope>
-    </dependency>
-
-    -->
 
     <!-- Source: https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
     <dependency>
